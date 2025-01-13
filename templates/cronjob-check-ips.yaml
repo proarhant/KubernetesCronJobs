@@ -1,0 +1,74 @@
+{{- range $jobid, $value := .Values.cronjobs }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .name }}-{{ $jobid }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    chart: {{ $.Chart.Name }}
+spec:
+  schedule: {{ .schedule | quote }}
+  timeZone: {{ .timeZone }}
+  concurrencyPolicy: {{ $.Values.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ $.Values.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ $.Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ $.Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      labels:
+        chart: {{ $.Chart.Name }}
+    spec:
+        template:
+          metadata:
+            labels:
+              chart: {{ $.Chart.Name }}
+          spec:
+              containers:
+              - name: {{ .name }}-container
+                image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+                imagePullPolicy: {{ $.Values.image.pullPolicy }}
+                args:
+                  - /bin/bash
+                  - -exc
+                  - |
+                    sleep 2
+                    {{ .command}}
+                    sleep 1
+                {{- if .resources }}
+                resources:
+                  {{- if .resources.requests }}
+                  requests:
+                    {{- if .resources.requests.cpu }}
+                    cpu: {{ .resources.requests.cpu }}
+                    {{- end }}
+                    {{- if .resources.requests.memory }}
+                    memory: {{ .resources.requests.memory }}
+                    {{- end }}
+                  {{- end }}
+                  {{- if .resources.limits }}
+                  limits:
+                    {{- if .resources.limits.cpu }}
+                    cpu: {{ .resources.limits.cpu }}
+                    {{- end }}
+                    {{- if .resources.limits.memory }}
+                    memory: {{ .resources.limits.memory }}
+                    {{- end }}
+                  {{- end }}
+                {{- end }}
+                volumeMounts:
+                - name: {{ $jobid }}
+                  mountPath: "/cronJobs"
+                  readOnly: false
+                - name: {{ $jobid }}-output
+                  mountPath: "/cronJobs/{{ $jobid }}-output"
+              restartPolicy: {{ $.Values.restartPolicy }}
+              volumes:
+              - name: {{ $jobid }}
+                configMap:
+                  name: {{ $.Chart.Name }}
+                  defaultMode: 0544
+              - name: {{ $jobid }}-output
+                emptyDir:
+                   sizeLimit: 10Mi
+---
+{{- end }}
