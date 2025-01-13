@@ -1,0 +1,35 @@
+namespace: APublicService
+restartPolicy: Never
+concurrencyPolicy: Forbid
+startingDeadlineSeconds: 7
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 2
+image:
+  repository: ubuntu
+  tag: latest
+  pullPolicy: IfNotPresent
+cronjobs:
+  "job-01":
+     name: cronjob-check-nr-ips
+     schedule: "*/1 * * * *"
+     timeZone: "Asia/Kolkata"
+     command: /cronJobs/cronjob-check-ips.sh
+     resources:
+       limits:
+         cpu: "250m"
+         memory: "256Mi"
+       requests:
+         cpu: "125m"
+         memory: "128Mi"
+  "job-02":
+     name: cronjob-check-pod-ips
+     schedule: "*/3 * * * *"
+     timeZone: "Asia/Tokyo"
+     command: /cronJobs/cronjob-check-pod-ips.sh
+     resources:
+       limits:
+         cpu: "125m"
+         memory: "128M"
+       requests:
+         cpu: "75m"
+         memory: "50M"
